@@ -79,40 +79,25 @@ h1 {
 .niveau.exploration { background: #eee7f8; }
 .niveau.actif { border-color: var(--vert-fonce); box-shadow: inset 0 0 0 2px white; }
 .niveau.exploration.actif { border-color: var(--violet); }
-.barre-jeu {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin: 15px 0 12px;
-}
-.theme {
-  font-size: 1.2rem;
-  font-weight: 900;
-  color: #67482b;
-}
-.compteur {
-  padding: 8px 13px;
-  border-radius: 999px;
-  background: #e7f3df;
-  font-weight: 900;
+.zone-jeu {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 245px;
+  gap: 18px;
+  align-items: start;
+  margin-top: 16px;
 }
 .nouvelle {
-  min-height: 42px;
+  display: block;
+  width: 100%;
+  min-height: 46px;
   padding: 0 15px;
+  margin-bottom: 12px;
   border: 0;
   border-radius: 999px;
   background: #6d8d54;
   color: white;
   font-weight: 900;
   cursor: pointer;
-}
-.zone-jeu {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 245px;
-  gap: 18px;
-  align-items: start;
 }
 .grille-wrap {
   overflow: hidden;
@@ -277,23 +262,18 @@ h1 {
 <main class="page">
 <header>
 <a class="back-link" href="https://pierreg78-maker.github.io/Atelier/">Retour<br>à<br>l'accueil</a>
-<h1>🧩 Mots mêlés</h1>
+<h1>Mots mêlés</h1>
 </header>
 <section class="panneau">
 <div class="niveaux" aria-label="Choix du niveau">
 <button class="niveau actif" id="niveauPromenade" type="button" data-niveau="promenade">
-<strong>🟢 Promenade</strong>
-<span>Grille 8 × 8, mots horizontaux ou verticaux, tous à l'endroit.</span>
+<strong>🟢 Niveau 1</strong>
+<span>Grille 8 × 8, mots à l'endroit, pas de diagonales.</span>
 </button>
 <button class="niveau exploration" id="niveauExploration" type="button" data-niveau="exploration">
-<strong>🟣 Exploration</strong>
-<span>Grille 10 × 10, diagonales et un ou deux mots à l'envers.</span>
+<strong>🟣 Niveau 2</strong>
+<span>Grille 10 × 10, mots dans tous les sens.</span>
 </button>
-</div>
-<div class="barre-jeu">
-<div class="theme" id="themeTitre">📖 Les animaux</div>
-<div class="compteur" id="compteur">0 / 5 mots trouvés</div>
-<button class="nouvelle" id="nouvelleGrille" type="button">🔄 Nouvelle grille</button>
 </div>
 <div class="zone-jeu">
 <div>
@@ -304,7 +284,8 @@ h1 {
 <div class="message" id="message" aria-live="polite"></div>
 </div>
 <aside class="liste">
-<h2 id="listeTitre">Mots à retrouver</h2>
+<h2>Mots à retrouver</h2>
+<button class="nouvelle" id="nouvelleGrille" type="button">🔄 Recommencer</button>
 <ul class="mots" id="listeMots"></ul>
 </aside>
 </div>
@@ -348,11 +329,8 @@ let casesSelectionnees = [];
 
 const grilleEl = document.getElementById('grille');
 const listeEl = document.getElementById('listeMots');
-const compteurEl = document.getElementById('compteur');
 const messageEl = document.getElementById('message');
 const overlayEl = document.getElementById('overlayVictoire');
-const themeTitreEl = document.getElementById('themeTitre');
-const listeTitreEl = document.getElementById('listeTitre');
 
 function normaliserMot(valeur) {
   if (typeof valeur !== 'string') return '';
@@ -418,8 +396,6 @@ function choisirNouvellePage() {
   const compatibles = page.mots.filter(mot => mot.length <= CONFIG[niveau].taille);
   const reservoir = compatibles.length >= 5 ? compatibles : page.mots;
   MOTS = melanger(reservoir).slice(0, 5);
-  themeTitreEl.textContent = `📖 ${themeActuel}`;
-  listeTitreEl.textContent = `${themeActuel} à retrouver`;
 }
 function melanger(tableau) {
   const t = [...tableau];
@@ -469,8 +445,6 @@ function genererPartie(changerPage = false) {
   else {
     const compatibles = pagesMots[indexPage]?.mots?.filter(mot => mot.length <= cfg.taille) || MOTS_SECOURS;
     MOTS = melanger(compatibles.length >= 5 ? compatibles : MOTS_SECOURS).slice(0, 5);
-    themeTitreEl.textContent = `📖 ${themeActuel}`;
-    listeTitreEl.textContent = `${themeActuel} à retrouver`;
   }
   taille = cfg.taille;
   motsTrouves = new Set();
@@ -499,7 +473,6 @@ function genererPartie(changerPage = false) {
   }
   afficherGrille();
   afficherListe();
-  mettreAJourCompteur();
 }
 function afficherGrille() {
   grilleEl.innerHTML = '';
@@ -525,9 +498,6 @@ function afficherListe() {
     li.innerHTML = `<span class="coche">${motsTrouves.has(mot) ? '✅' : '⬜'}</span><span>${mot}</span>`;
     listeEl.appendChild(li);
   });
-}
-function mettreAJourCompteur() {
-  compteurEl.textContent = `${motsTrouves.size} / ${MOTS.length} mots trouvés`;
 }
 function celluleDepuisCoordonnees(x, y) {
   const element = document.elementFromPoint(x, y);
@@ -584,7 +554,6 @@ function validerSelection() {
     });
     messageEl.textContent = `✨ Bravo, vous avez trouvé ${placement.mot} !`;
     afficherListe();
-    mettreAJourCompteur();
     if (motsTrouves.size === MOTS.length) {
       setTimeout(() => overlayEl.classList.add('visible'), 450);
     }
