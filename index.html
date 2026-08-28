@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#7cab68">
+<title>Mots mêlés</title>
+<style>
+:root {
+  --fond: #eef7e8;
+  --papier: #fffaf0;
+  --texte: #3e342d;
+  --vert: #5c9555;
+  --vert-fonce: #3f7140;
+  --violet: #7557a4;
+  --trouve: #f1c84b;
+  --trouve-clair: #fff0a8;
+  --bord: rgba(91, 67, 42, .18);
+  --ombre: 0 10px 24px rgba(65, 78, 50, .16);
+}
+* { box-sizing: border-box; }
+html { touch-action: manipulation; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: Arial, Helvetica, sans-serif;
+  color: var(--texte);
+  background:
+    radial-gradient(circle at 15% 8%, rgba(255,255,255,.75) 0 4%, transparent 4.5%),
+    radial-gradient(circle at 85% 12%, rgba(255,255,255,.55) 0 5%, transparent 5.5%),
+    linear-gradient(#dff2ff 0 22%, var(--fond) 22% 100%);
+}
+button, a { font: inherit; }
+.page {
+  width: min(1040px, 100%);
+  margin: 0 auto;
+  padding: 12px;
+}
+header {
+  position: relative;
+  padding: 22px 15px 18px;
+  border: 3px solid var(--bord);
+  border-radius: 25px;
+  background: rgba(255,250,240,.96);
+  text-align: center;
+  box-shadow: var(--ombre);
+}
+h1 {
+  margin: 0;
+  color: #6b4a2c;
+  font-size: clamp(2rem, 6vw, 3.8rem);
+  line-height: 1.05;
+}
+.panneau {
+  margin-top: 16px;
+  padding: 16px;
+  border: 3px solid var(--bord);
+  border-radius: 24px;
+  background: rgba(255,250,240,.96);
+  box-shadow: var(--ombre);
+}
+.niveaux {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.niveau {
+  min-height: 84px;
+  padding: 12px;
+  border: 3px solid transparent;
+  border-radius: 18px;
+  background: #e7f3df;
+  color: var(--texte);
+  cursor: pointer;
+  text-align: left;
+}
+.niveau strong { display: block; font-size: 1.16rem; margin-bottom: 4px; }
+.niveau span { display: block; line-height: 1.35; }
+.niveau.exploration { background: #eee7f8; }
+.niveau.actif { border-color: var(--vert-fonce); box-shadow: inset 0 0 0 2px white; }
+.niveau.exploration.actif { border-color: var(--violet); }
+.barre-jeu {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 15px 0 12px;
+}
+.theme {
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: #67482b;
+}
+.compteur {
+  padding: 8px 13px;
+  border-radius: 999px;
+  background: #e7f3df;
+  font-weight: 900;
+}
+.nouvelle {
+  min-height: 42px;
+  padding: 0 15px;
+  border: 0;
+  border-radius: 999px;
+  background: #6d8d54;
+  color: white;
+  font-weight: 900;
+  cursor: pointer;
+}
+.zone-jeu {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 245px;
+  gap: 18px;
+  align-items: start;
+}
+.grille-wrap {
+  overflow: hidden;
+  padding: 10px;
+  border-radius: 20px;
+  background: #ddd0ae;
+  box-shadow: inset 0 0 0 3px rgba(116,86,47,.18);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.grille {
+  display: grid;
+  width: min(100%, 650px);
+  margin: 0 auto;
+  gap: 4px;
+}
+.case {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1 / 1;
+  min-width: 0;
+  border: 0;
+  border-radius: 7px;
+  background: #fffdf7;
+  color: #2f2b28;
+  font-size: clamp(1rem, 4.2vw, 2rem);
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 0 2px 3px rgba(84,69,48,.12);
+  pointer-events: auto;
+}
+.case.selection { background: #d7eaca; color: #244c28; }
+.case.trouvee { background: var(--trouve-clair); color: #654800; box-shadow: inset 0 0 0 3px var(--trouve); }
+.liste {
+  padding: 14px;
+  border-radius: 20px;
+  background: #f6edda;
+  box-shadow: inset 0 0 0 3px rgba(116,86,47,.12);
+}
+.liste h2 {
+  margin: 0 0 11px;
+  color: #67482b;
+  font-size: 1.25rem;
+}
+.mots {
+  display: grid;
+  gap: 9px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.mot {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: white;
+  font-size: 1.08rem;
+  font-weight: 900;
+}
+.mot .coche { width: 25px; text-align: center; }
+.mot.trouve { background: #fff0aa; color: #664900; text-decoration: line-through; }
+.aide {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #e8f1f8;
+  line-height: 1.4;
+  text-align: center;
+}
+.message {
+  min-height: 25px;
+  margin-top: 10px;
+  text-align: center;
+  font-weight: 900;
+  color: var(--vert-fonce);
+}
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: none;
+  place-items: center;
+  padding: 18px;
+  background: rgba(40,35,28,.68);
+}
+.overlay.visible { display: grid; }
+.victoire {
+  width: min(420px, 100%);
+  padding: 28px 20px;
+  border: 5px solid #d8b548;
+  border-radius: 28px;
+  background: var(--papier);
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(0,0,0,.3);
+}
+.victoire h2 { margin: 5px 0 10px; color: #704c28; font-size: 1.8rem; }
+.rejouer {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 24px;
+  margin-top: 18px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--vert);
+  color: white;
+  font-weight: 900;
+  cursor: pointer;
+}
+.back-link {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  z-index: 10;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  background: #4A7CCC;
+  color: white;
+  text-decoration: none;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.05;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+  transition: transform .15s ease, filter .15s ease;
+}
+.back-link:hover { filter: brightness(1.08); }
+.back-link:active { transform: scale(.95); }
+@media (max-width: 760px) {
+  .zone-jeu { grid-template-columns: 1fr; }
+  .liste { order: -1; }
+  .mots { grid-template-columns: repeat(5, minmax(0,1fr)); gap: 5px; }
+  .mot { justify-content: center; min-height: 40px; padding: 5px 4px; font-size: .82rem; }
+  .mot .coche { display: none; }
+}
+@media (max-width: 560px) {
+  .page { padding: 8px; }
+  .niveaux { grid-template-columns: 1fr; }
+  .panneau { padding: 10px; }
+  .grille-wrap { padding: 6px; }
+  .grille { gap: 2px; }
+  .case { border-radius: 4px; font-size: clamp(.9rem, 5.2vw, 1.45rem); }
+  .mots { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .mot { font-size: .96rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+</style>
+</head>
+<body>
+<main class="page">
+<header>
+<a class="back-link" href="https://pierreg78-maker.github.io/Atelier/">Retour<br>à<br>l'accueil</a>
+<h1>🧩 Mots mêlés</h1>
+</header>
+<section class="panneau">
+<div class="niveaux" aria-label="Choix du niveau">
+<button class="niveau actif" id="niveauPromenade" type="button" data-niveau="promenade">
+<strong>🟢 Promenade</strong>
+<span>Grille 8 × 8, mots horizontaux ou verticaux, tous à l'endroit.</span>
+</button>
+<button class="niveau exploration" id="niveauExploration" type="button" data-niveau="exploration">
+<strong>🟣 Exploration</strong>
+<span>Grille 10 × 10, diagonales et un ou deux mots à l'envers.</span>
+</button>
+</div>
+<div class="barre-jeu">
+<div class="theme" id="themeTitre">📖 Les animaux</div>
+<div class="compteur" id="compteur">0 / 5 mots trouvés</div>
+<button class="nouvelle" id="nouvelleGrille" type="button">🔄 Nouvelle grille</button>
+</div>
+<div class="zone-jeu">
+<div>
+<div class="grille-wrap" id="grilleWrap">
+<div class="grille" id="grille" role="grid" aria-label="Grille de mots mêlés"></div>
+</div>
+<p class="aide">Touchez une lettre, gardez le doigt appuyé et glissez en ligne droite jusqu'à la dernière lettre.</p>
+<div class="message" id="message" aria-live="polite"></div>
+</div>
+<aside class="liste">
+<h2 id="listeTitre">Mots à retrouver</h2>
+<ul class="mots" id="listeMots"></ul>
+</aside>
+</div>
+</section>
+</main>
+<div class="overlay" id="overlayVictoire" role="dialog" aria-modal="true" aria-labelledby="titreVictoire">
+<div class="victoire">
+<h2 id="titreVictoire">Bravo !</h2>
+<p>Vous avez retrouvé tous les mots.</p>
+<button class="rejouer" id="rejouer" type="button">🔄 Nouvelle grille</button>
+</div>
+</div>
+<script>
+'use strict';
+const MOTS_SECOURS = ['CHAT', 'CHIEN', 'LION', 'SOURIS', 'CHEVAL'];
+let MOTS = [...MOTS_SECOURS];
+let themeActuel = 'Les animaux';
+let pagesMots = [];
+let indexPage = 0;
+const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const CONFIG = {
+  promenade: {
+    taille: 8,
+    directions: [[0, 1], [1, 0]],
+    inverses: 0
+  },
+  exploration: {
+    taille: 10,
+    directions: [[0,1], [1,0], [1,1], [1,-1], [0,-1], [-1,0], [-1,-1], [-1,1]],
+    inverses: 2
+  }
+};
+let niveau = 'promenade';
+let taille = CONFIG[niveau].taille;
+let lettres = [];
+let placements = [];
+let motsTrouves = new Set();
+let selectionActive = false;
+let debutSelection = null;
+let casesSelectionnees = [];
+
+const grilleEl = document.getElementById('grille');
+const listeEl = document.getElementById('listeMots');
+const compteurEl = document.getElementById('compteur');
+const messageEl = document.getElementById('message');
+const overlayEl = document.getElementById('overlayVictoire');
+const themeTitreEl = document.getElementById('themeTitre');
+const listeTitreEl = document.getElementById('listeTitre');
+
+function normaliserMot(valeur) {
+  if (typeof valeur !== 'string') return '';
+  return valeur
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .replace(/[^A-Z]/g, '');
+}
+function extrairePagesMots(data) {
+  let sources = [];
+  if (Array.isArray(data)) {
+    if (data.every(item => typeof item === 'string')) {
+      sources = [{ theme: 'Mots mélangés', mots: data }];
+    } else {
+      sources = data;
+    }
+  } else if (data && typeof data === 'object') {
+    if (Array.isArray(data.pages)) sources = data.pages;
+    else if (Array.isArray(data.listes)) sources = data.listes;
+    else if (Array.isArray(data.themes)) sources = data.themes;
+    else if (Array.isArray(data.mots)) sources = [{ theme: data.theme || data.titre || 'Mots mélangés', mots: data.mots }];
+    else {
+      sources = Object.entries(data).map(([theme, mots]) => ({ theme, mots }));
+    }
+  }
+  return sources.map((source, i) => {
+    const brut = Array.isArray(source) ? source : (source?.mots || source?.liste || source?.words || []);
+    const mots = [...new Set(brut.map(normaliserMot).filter(mot => mot.length >= 2 && mot.length <= 10))];
+    return {
+      theme: String(source?.theme || source?.titre || source?.nom || `Page ${i + 1}`),
+      mots
+    };
+  }).filter(page => page.mots.length >= 5);
+}
+async function chargerListesMots() {
+  try {
+    const reponse = await fetch('./listes-mots.json', { cache: 'no-store' });
+    if (!reponse.ok) throw new Error(`Erreur HTTP ${reponse.status}`);
+    const data = await reponse.json();
+    pagesMots = extrairePagesMots(data);
+    if (!pagesMots.length) throw new Error('Aucune liste valide de cinq mots minimum');
+    choisirNouvellePage();
+    messageEl.textContent = '';
+  } catch (erreur) {
+    console.warn('listes-mots.json non chargé, utilisation de la liste de secours :', erreur);
+    pagesMots = [{ theme: 'Les animaux', mots: MOTS_SECOURS }];
+    choisirNouvellePage();
+    messageEl.textContent = 'La liste externe n’a pas pu être chargée : liste de secours utilisée.';
+  }
+}
+function choisirNouvellePage() {
+  if (!pagesMots.length) return;
+  if (pagesMots.length > 1) {
+    let prochain = indexPage;
+    while (prochain === indexPage) prochain = Math.floor(Math.random() * pagesMots.length);
+    indexPage = prochain;
+  } else {
+    indexPage = 0;
+  }
+  const page = pagesMots[indexPage];
+  themeActuel = page.theme;
+  const compatibles = page.mots.filter(mot => mot.length <= CONFIG[niveau].taille);
+  const reservoir = compatibles.length >= 5 ? compatibles : page.mots;
+  MOTS = melanger(reservoir).slice(0, 5);
+  themeTitreEl.textContent = `📖 ${themeActuel}`;
+  listeTitreEl.textContent = `${themeActuel} à retrouver`;
+}
+function melanger(tableau) {
+  const t = [...tableau];
+  for (let i = t.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [t[i], t[j]] = [t[j], t[i]];
+  }
+  return t;
+}
+function creerMatrice(n) {
+  return Array.from({ length: n }, () => Array(n).fill(''));
+}
+function peutPlacer(mot, ligne, colonne, dl, dc) {
+  const finL = ligne + dl * (mot.length - 1);
+  const finC = colonne + dc * (mot.length - 1);
+  if (finL < 0 || finL >= taille || finC < 0 || finC >= taille) return false;
+  for (let i = 0; i < mot.length; i++) {
+    const l = ligne + dl * i;
+    const c = colonne + dc * i;
+    const existante = lettres[l][c];
+    if (existante && existante !== mot[i]) return false;
+  }
+  return true;
+}
+function poserMot(motOriginal, motPlace, inverse, directions) {
+  const essais = 250;
+  for (let tentative = 0; tentative < essais; tentative++) {
+    const [dl, dc] = directions[Math.floor(Math.random() * directions.length)];
+    const ligne = Math.floor(Math.random() * taille);
+    const colonne = Math.floor(Math.random() * taille);
+    if (!peutPlacer(motPlace, ligne, colonne, dl, dc)) continue;
+    const cases = [];
+    for (let i = 0; i < motPlace.length; i++) {
+      const l = ligne + dl * i;
+      const c = colonne + dc * i;
+      lettres[l][c] = motPlace[i];
+      cases.push([l, c]);
+    }
+    placements.push({ mot: motOriginal, inverse, cases });
+    return true;
+  }
+  return false;
+}
+function genererPartie(changerPage = false) {
+  const cfg = CONFIG[niveau];
+  if (changerPage) choisirNouvellePage();
+  else {
+    const compatibles = pagesMots[indexPage]?.mots?.filter(mot => mot.length <= cfg.taille) || MOTS_SECOURS;
+    MOTS = melanger(compatibles.length >= 5 ? compatibles : MOTS_SECOURS).slice(0, 5);
+    themeTitreEl.textContent = `📖 ${themeActuel}`;
+    listeTitreEl.textContent = `${themeActuel} à retrouver`;
+  }
+  taille = cfg.taille;
+  motsTrouves = new Set();
+  overlayEl.classList.remove('visible');
+  messageEl.textContent = '';
+  let reussi = false;
+  for (let regeneration = 0; regeneration < 100 && !reussi; regeneration++) {
+    lettres = creerMatrice(taille);
+    placements = [];
+    const ordre = melanger(MOTS).sort((a, b) => b.length - a.length);
+    const inversesChoisis = new Set(melanger(ordre).slice(0, cfg.inverses));
+    reussi = ordre.every(mot => {
+      const inverse = inversesChoisis.has(mot);
+      const motPlace = inverse ? [...mot].reverse().join('') : mot;
+      return poserMot(mot, motPlace, inverse, melanger(cfg.directions));
+    });
+  }
+  if (!reussi) {
+    messageEl.textContent = "La grille n'a pas pu être créée. Appuyez sur Nouvelle grille.";
+    return;
+  }
+  for (let l = 0; l < taille; l++) {
+    for (let c = 0; c < taille; c++) {
+      if (!lettres[l][c]) lettres[l][c] = ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
+    }
+  }
+  afficherGrille();
+  afficherListe();
+  mettreAJourCompteur();
+}
+function afficherGrille() {
+  grilleEl.innerHTML = '';
+  grilleEl.style.gridTemplateColumns = `repeat(${taille}, minmax(0, 1fr))`;
+  for (let l = 0; l < taille; l++) {
+    for (let c = 0; c < taille; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'case';
+      cell.textContent = lettres[l][c];
+      cell.dataset.ligne = String(l);
+      cell.dataset.colonne = String(c);
+      cell.setAttribute('role', 'gridcell');
+      grilleEl.appendChild(cell);
+    }
+  }
+}
+function afficherListe() {
+  listeEl.innerHTML = '';
+  MOTS.forEach(mot => {
+    const li = document.createElement('li');
+    li.className = 'mot' + (motsTrouves.has(mot) ? ' trouve' : '');
+    li.dataset.mot = mot;
+    li.innerHTML = `<span class="coche">${motsTrouves.has(mot) ? '✅' : '⬜'}</span><span>${mot}</span>`;
+    listeEl.appendChild(li);
+  });
+}
+function mettreAJourCompteur() {
+  compteurEl.textContent = `${motsTrouves.size} / ${MOTS.length} mots trouvés`;
+}
+function celluleDepuisCoordonnees(x, y) {
+  const element = document.elementFromPoint(x, y);
+  const cell = element?.closest('.case');
+  if (!cell || !grilleEl.contains(cell)) return null;
+  return { ligne: Number(cell.dataset.ligne), colonne: Number(cell.dataset.colonne) };
+}
+function ligneEntre(debut, fin) {
+  const dlTotal = fin.ligne - debut.ligne;
+  const dcTotal = fin.colonne - debut.colonne;
+  const absL = Math.abs(dlTotal);
+  const absC = Math.abs(dcTotal);
+  if (!(dlTotal === 0 || dcTotal === 0 || absL === absC)) return [];
+  const longueur = Math.max(absL, absC) + 1;
+  const dl = Math.sign(dlTotal);
+  const dc = Math.sign(dcTotal);
+  const resultat = [];
+  for (let i = 0; i < longueur; i++) {
+    resultat.push([debut.ligne + dl * i, debut.colonne + dc * i]);
+  }
+  return resultat;
+}
+function effacerSelectionVisuelle() {
+  document.querySelectorAll('.case.selection').forEach(el => el.classList.remove('selection'));
+  casesSelectionnees = [];
+}
+function afficherSelection(cases) {
+  effacerSelectionVisuelle();
+  casesSelectionnees = cases;
+  cases.forEach(([l, c]) => {
+    const index = l * taille + c;
+    grilleEl.children[index]?.classList.add('selection');
+  });
+}
+function texteSelection(cases) {
+  return cases.map(([l, c]) => lettres[l][c]).join('');
+}
+function comparerCases(a, b) {
+  return a.length === b.length && a.every((caseA, i) => caseA[0] === b[i][0] && caseA[1] === b[i][1]);
+}
+function validerSelection() {
+  if (!casesSelectionnees.length) return;
+  const texte = texteSelection(casesSelectionnees);
+  const texteInverse = [...texte].reverse().join('');
+  const placement = placements.find(p => {
+    if (motsTrouves.has(p.mot)) return false;
+    const inverseCases = [...p.cases].reverse();
+    return comparerCases(casesSelectionnees, p.cases) || comparerCases(casesSelectionnees, inverseCases) || p.mot === texte || p.mot === texteInverse;
+  });
+  if (placement && (placement.mot === texte || placement.mot === texteInverse)) {
+    motsTrouves.add(placement.mot);
+    casesSelectionnees.forEach(([l, c]) => {
+      grilleEl.children[l * taille + c]?.classList.add('trouvee');
+    });
+    messageEl.textContent = `✨ Bravo, vous avez trouvé ${placement.mot} !`;
+    afficherListe();
+    mettreAJourCompteur();
+    if (motsTrouves.size === MOTS.length) {
+      setTimeout(() => overlayEl.classList.add('visible'), 450);
+    }
+  } else {
+    messageEl.textContent = "Ce mot n'est pas dans la liste. Essayez encore.";
+  }
+  effacerSelectionVisuelle();
+}
+function pointerDebut(event) {
+  const cellule = celluleDepuisCoordonnees(event.clientX, event.clientY);
+  if (!cellule) return;
+  event.preventDefault();
+  selectionActive = true;
+  debutSelection = cellule;
+  afficherSelection([[cellule.ligne, cellule.colonne]]);
+  grilleEl.setPointerCapture?.(event.pointerId);
+}
+function pointerMouvement(event) {
+  if (!selectionActive || !debutSelection) return;
+  event.preventDefault();
+  const cellule = celluleDepuisCoordonnees(event.clientX, event.clientY);
+  if (!cellule) return;
+  const cases = ligneEntre(debutSelection, cellule);
+  if (cases.length) afficherSelection(cases);
+}
+function pointerFin(event) {
+  if (!selectionActive) return;
+  event.preventDefault();
+  selectionActive = false;
+  debutSelection = null;
+  validerSelection();
+}
+function choisirNiveau(nouveauNiveau) {
+  niveau = nouveauNiveau;
+  document.querySelectorAll('.niveau').forEach(btn => {
+    btn.classList.toggle('actif', btn.dataset.niveau === niveau);
+  });
+  genererPartie();
+}
+grilleEl.addEventListener('pointerdown', pointerDebut);
+grilleEl.addEventListener('pointermove', pointerMouvement);
+grilleEl.addEventListener('pointerup', pointerFin);
+grilleEl.addEventListener('pointercancel', pointerFin);
+document.querySelectorAll('.niveau').forEach(btn => {
+  btn.addEventListener('click', () => choisirNiveau(btn.dataset.niveau));
+});
+document.getElementById('nouvelleGrille').addEventListener('click', () => genererPartie(true));
+document.getElementById('rejouer').addEventListener('click', () => genererPartie(true));
+chargerListesMots().then(() => genererPartie(false));
+</script>
+</body>
+</html>
