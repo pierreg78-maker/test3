@@ -1,2 +1,2 @@
 # mots mêlés 
-jeu où l'on doit retrouver des mots dans une grille. 
+jeu où l'on doit retrouver des mots dans une grille de lettres. 
